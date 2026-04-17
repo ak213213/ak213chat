@@ -8,9 +8,11 @@
 
 <h2>💬 ak213chat</h2>
 
+<input id="pseudo" placeholder="Ton pseudo">
+<br><br>
+
 <input id="msg" placeholder="message">
 <button onclick="send()">Envoyer</button>
-
 <ul id="messages"></ul>
 
 <script type="module">
@@ -36,33 +38,38 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  async function send(){
-    let msg = document.getElementById("msg").value;
+async function send(){
+  let msg = document.getElementById("msg").value;
+  let pseudo = document.getElementById("pseudo").value;
 
-    if(msg.trim() === "") return;
+  if(msg.trim() === "") return;
+  if(pseudo.trim() === "") pseudo = "Anonyme";
 
-    await addDoc(collection(db, "messages"), {
-      text: msg,
-      time: Date.now()
-    });
+  await addDoc(collection(db, "messages"), {
+    text: msg,
+    user: pseudo,
+    time: Date.now()
+  });
 
-    document.getElementById("msg").value = "";
-  }
+  document.getElementById("msg").value = "";
+}
 
   window.send = send;
 
   const q = query(collection(db, "messages"), orderBy("time"));
 
   onSnapshot(q, (snapshot) => {
-    let list = document.getElementById("messages");
-    list.innerHTML = "";
+  let list = document.getElementById("messages");
+  list.innerHTML = "";
 
-    snapshot.forEach((doc) => {
-      let li = document.createElement("li");
-      li.innerText = doc.data().text;
-      list.appendChild(li);
-    });
+  snapshot.forEach((doc) => {
+    let data = doc.data();
+
+    let li = document.createElement("li");
+    li.innerText = data.user + " : " + data.text;
+    list.appendChild(li);
   });
+});
 
 </script>
 
