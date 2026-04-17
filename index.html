@@ -2,18 +2,81 @@
 <html>
 <head>
   <title>ak213chat</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #ece5dd;
+      margin: 0;
+      padding: 10px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    #messages {
+      list-style: none;
+      padding: 0;
+    }
+
+    .msg {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 10px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .me {
+      background: #dcf8c6;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .other {
+      background: white;
+      margin-right: auto;
+    }
+
+    .user {
+      font-weight: bold;
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    input {
+      padding: 10px;
+      width: 45%;
+      margin: 5px;
+    }
+
+    button {
+      padding: 10px;
+    }
+
+    #chatBox {
+      max-width: 600px;
+      margin: auto;
+    }
+  </style>
 </head>
 
 <body>
 
 <h2>💬 ak213chat</h2>
 
+<div id="chatBox">
+
 <input id="pseudo" placeholder="Ton pseudo">
-<br><br>
+<br>
 
 <input id="msg" placeholder="message">
 <button onclick="send()">Envoyer</button>
+
 <ul id="messages"></ul>
+
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -38,38 +101,65 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-async function send(){
-  let msg = document.getElementById("msg").value;
-  let pseudo = document.getElementById("pseudo").value;
+  // 🔐 pseudo mémorisé
+  let savedPseudo = localStorage.getItem("pseudo");
+  if(savedPseudo){
+    document.getElementById("pseudo").value = savedPseudo;
+  }
 
-  if(msg.trim() === "") return;
-  if(pseudo.trim() === "") pseudo = "Anonyme";
+  async function send(){
+    let msg = document.getElementById("msg").value;
+    let pseudo = document.getElementById("pseudo").value;
 
-  await addDoc(collection(db, "messages"), {
-    text: msg,
-    user: pseudo,
-    time: Date.now()
-  });
+    if(msg.trim() === "") return;
+    if(pseudo.trim() === "") pseudo = "Anonyme";
 
-  document.getElementById("msg").value = "";
-}
+    localStorage.setItem("pseudo", pseudo);
+
+    await addDoc(collection(db, "messages"), {
+      text: msg,
+      user: pseudo,
+      time: Date.now()
+    });
+
+    document.getElementById("msg").value = "";
+  }
 
   window.send = send;
 
   const q = query(collection(db, "messages"), orderBy("time"));
 
   onSnapshot(q, (snapshot) => {
-  let list = document.getElementById("messages");
-  list.innerHTML = "";
+    let list = document.getElementById("messages");
+    list.innerHTML = "";
 
-  snapshot.forEach((doc) => {
-    let data = doc.data();
+    snapshot.forEach((doc) => {
+      let data = doc.data();
 
-    let li = document.createElement("li");
-    li.innerText = data.user + " : " + data.text;
-    list.appendChild(li);
+      let li = document.createElement("li");
+
+      li.classList.add("msg");
+
+      // 🟢 couleur type WhatsApp (toi vs autres)
+      if(data.user === document.getElementById("pseudo").value){
+        li.classList.add("me");
+      } else {
+        li.classList.add("other");
+      }
+
+      li.innerHTML = `
+        <div class="user">${data.user}</div>
+        <div>${data.text}</div>
+      `;
+
+      list.appendChild(li);
+
+      // 🔔 notification simple
+      if(document.hidden){
+        console.log("Nouveau message !");
+      }
+    });
   });
-});
 
 </script>
 
